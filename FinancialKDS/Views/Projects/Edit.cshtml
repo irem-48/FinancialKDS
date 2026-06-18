@@ -1,0 +1,47 @@
+﻿@model Project
+
+@{
+    ViewData["Title"] = "Proje Düzenle";
+}
+
+<h2>Proje Bilgilerini Düzenle</h2>
+
+<p class="text-muted">
+    Proje bilgilerini güncelleyebilirsin. Nakit akışı verileri ayrı olarak yönetilir.
+</p>
+
+<form asp-action="Edit" method="post" class="mt-4">
+    <input type="hidden" asp-for="Id" />
+
+    <div class="mb-3">
+        <label asp-for="ProjectName" class="form-label"></label>
+        <input asp-for="ProjectName" class="form-control" />
+        <span asp-validation-for="ProjectName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="InitialInvestment" class="form-label"></label>
+        <input asp-for="InitialInvestment" class="form-control" />
+        <span asp-validation-for="InitialInvestment" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="DiscountRate" class="form-label"></label>
+        <input asp-for="DiscountRate" class="form-control" />
+        <span asp-validation-for="DiscountRate" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ForecastPeriod" class="form-label"></label>
+        <input asp-for="ForecastPeriod" class="form-control" />
+        <span asp-validation-for="ForecastPeriod" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Güncelle</button>
+    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">Geri Dön</a>
+</form>

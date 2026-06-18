@@ -1,0 +1,37 @@
+﻿@model Project
+
+@{
+    ViewData["Title"] = "Proje Sil";
+}
+
+<h2>Proje Sil</h2>
+
+<div class="alert alert-danger mt-4">
+    <strong>Dikkat!</strong> Bu projeyi silersen projeye ait nakit akışları, tahmin sonuçları ve analiz sonuçları da silinir.
+</div>
+
+<div class="card mt-4">
+    <div class="card-header bg-dark text-white">
+        Silinecek Proje
+    </div>
+
+    <div class="card-body">
+        <p><strong>Proje Adı:</strong> @Model.ProjectName</p>
+        <p><strong>Açıklama:</strong> @Model.Description</p>
+        <p><strong>İlk Yatırım Maliyeti:</strong> @Model.InitialInvestment.ToString("N2") TL</p>
+        <p><strong>İskonto Oranı:</strong> %@Model.DiscountRate</p>
+        <p><strong>Tahmin Dönemi:</strong> @Model.ForecastPeriod dönem</p>
+    </div>
+</div>
+
+<form asp-action="DeleteConfirmed" method="post" class="mt-4">
+    <input type="hidden" name="id" value="@Model.Id" />
+
+    <button type="submit" class="btn btn-danger">
+        Evet, Projeyi Sil
+    </button>
+
+    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+        Vazgeç
+    </a>
+</form>
