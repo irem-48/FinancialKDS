@@ -1,22 +1,22 @@
-# FinancialKDS - Finansal Karar Destek Sistemi
+# FinancialKDS - Financial Decision Support System
 
-FinancialKDS, yatırım projelerinin fizibilite analizini gerçekleştirmek amacıyla geliştirilmiş web tabanlı bir karar destek sistemidir. Sistem, kullanıcı tarafından girilen geçmiş dönem nakit akışı verilerini doğrusal regresyon yöntemiyle analiz eder, gelecek dönem nakit akışlarını tahmin eder ve Net Bugünkü Değer (NPV) hesaplaması ile yatırım kararını destekler.
+FinancialKDS is a web-based decision support system developed to perform feasibility analysis for investment projects. The system analyzes historical cash flow data entered by the user using the linear regression method, forecasts future cash flows, and supports investment decisions through Net Present Value (NPV) calculation.
 
-## Projenin Amacı
+## Purpose of the Project
 
-Bu projenin temel amacı, yatırım projelerinin finansal değerlendirme sürecini dijitalleştirerek manuel hesaplama hatalarını azaltmak ve kullanıcıya hızlı, anlaşılır ve grafik destekli fizibilite raporları sunmaktır.
+The main purpose of this project is to digitalize the financial evaluation process of investment projects, reduce manual calculation errors, and provide users with fast, understandable, and graph-supported feasibility reports.
 
-Sistem sayesinde kullanıcılar:
+With this system, users can:
 
-* Yeni yatırım projesi oluşturabilir.
-* Projeye ait ilk yatırım maliyeti, iskonto oranı ve tahmin dönemi bilgilerini girebilir.
-* Geçmiş dönem nakit akışı verilerini kaydedebilir.
-* Doğrusal regresyon ile gelecek dönem nakit akışlarını tahmin edebilir.
-* NPV hesaplaması ile yatırımın finansal açıdan kabul edilebilir olup olmadığını görebilir.
-* Analiz sonuçlarını grafiksel olarak inceleyebilir.
-* Rapor çıktısını PDF olarak alabilir.
+* Create a new investment project.
+* Enter the initial investment cost, discount rate, and forecast period information of the project.
+* Save historical cash flow data.
+* Forecast future cash flows using linear regression.
+* Determine whether the investment is financially acceptable through NPV calculation.
+* Analyze results visually with charts.
+* Export the report as a PDF.
 
-## Kullanılan Teknolojiler
+## Technologies Used
 
 * C#
 * ASP.NET Core MVC
@@ -29,39 +29,39 @@ Sistem sayesinde kullanıcılar:
 * Chart.js
 * Visual Studio 2022
 
-## Proje Özellikleri
+## Project Features
 
-### Proje Yönetimi
+### Project Management
 
-Kullanıcı sistem üzerinde yeni yatırım projeleri oluşturabilir, mevcut projeleri düzenleyebilir ve silebilir. Her proje için proje adı, açıklama, ilk yatırım maliyeti, iskonto oranı ve tahmin edilecek dönem sayısı bilgileri tutulur.
+Users can create new investment projects, edit existing projects, and delete projects within the system. For each project, information such as project name, description, initial investment cost, discount rate, and the number of forecast periods is stored.
 
-### Nakit Akışı Yönetimi
+### Cash Flow Management
 
-Her yatırım projesi için geçmiş dönem nakit akışı verileri sisteme girilebilir. Sistem, aynı proje için aynı dönem bilgisinin tekrar girilmesini engelleyerek veri bütünlüğünü korur.
+Historical cash flow data can be entered for each investment project. The system preserves data integrity by preventing duplicate period entries for the same project.
 
-### Doğrusal Regresyon ile Tahminleme
+### Forecasting with Linear Regression
 
-Girilen geçmiş dönem nakit akışı verileri doğrusal regresyon yöntemiyle analiz edilir. Sistem, regresyon katsayılarını hesaplayarak gelecek dönemler için tahmini nakit akışları üretir.
+The entered historical cash flow data is analyzed using the linear regression method. The system calculates regression coefficients and generates estimated cash flows for future periods.
 
-### NPV Hesaplama
+### NPV Calculation
 
-Tahmin edilen gelecek dönem nakit akışları, kullanıcının belirlediği iskonto oranı ile bugünkü değere indirgenir. Elde edilen toplam bugünkü değerden ilk yatırım maliyeti çıkarılarak Net Bugünkü Değer hesaplanır.
+The forecasted future cash flows are discounted to their present value using the discount rate specified by the user. The Net Present Value is calculated by subtracting the initial investment cost from the total present value.
 
-NPV sonucuna göre sistem şu kararları üretir:
+Based on the NPV result, the system produces the following decisions:
 
-* NPV > 0 ise yatırım finansal açıdan kabul edilebilir.
-* NPV < 0 ise yatırım finansal açıdan uygun değildir.
-* NPV = 0 ise yatırım başa baş noktasındadır.
+* If NPV > 0, the investment is financially acceptable.
+* If NPV < 0, the investment is not financially suitable.
+* If NPV = 0, the investment is at the break-even point.
 
-### Grafiksel Raporlama
+### Graphical Reporting
 
-Analiz sonuçları tablo ve grafiklerle kullanıcıya sunulur. Chart.js kullanılarak geçmiş ve tahmini nakit akışları karşılaştırmalı olarak görselleştirilir.
+Analysis results are presented to the user through tables and charts. Historical and forecasted cash flows are visualized comparatively using Chart.js.
 
-### PDF / Yazdırılabilir Rapor
+### PDF / Printable Report
 
-Analiz sonuçları, tarayıcının yazdırma özelliği kullanılarak PDF formatında raporlanabilir. Bu çıktı, yatırım fizibilite raporu olarak kullanılabilir.
+Analysis results can be reported in PDF format using the browser’s print feature. This output can be used as an investment feasibility report.
 
-## Proje Yapısı
+## Project Structure
 
 ```text
 FinancialKDS
@@ -93,36 +93,36 @@ FinancialKDS
 └── appsettings.json
 ```
 
-## Veritabanı Yapısı
+## Database Structure
 
-Projede Entity Framework Core Code First yaklaşımı kullanılmıştır. Temel tablolar şunlardır:
+The project uses the Entity Framework Core Code First approach. The main tables are:
 
 * Projects
 * CashFlows
 * ForecastResults
 * AnalysisResults
 
-## Kurulum
+## Installation
 
-Projeyi çalıştırmak için aşağıdaki adımlar izlenebilir:
+To run the project, follow the steps below:
 
-1. Repoyu bilgisayara klonlayın.
+1. Clone the repository to your computer.
 
 ```bash
-git clone https://github.com/kullanici-adiniz/FinancialKDS.git
+git clone https://github.com/your-username/FinancialKDS.git
 ```
 
-2. Proje klasörüne girin.
+2. Navigate to the project folder.
 
 ```bash
 cd FinancialKDS
 ```
 
-3. Visual Studio 2022 ile `FinancialKDS.sln` dosyasını açın.
+3. Open the `FinancialKDS.sln` file with Visual Studio 2022.
 
-4. NuGet paketlerinin yüklü olduğundan emin olun.
+4. Make sure the NuGet packages are installed.
 
-Kullanılan temel paketler:
+Main packages used:
 
 ```text
 Microsoft.EntityFrameworkCore.SqlServer
@@ -130,44 +130,44 @@ Microsoft.EntityFrameworkCore.Tools
 Microsoft.EntityFrameworkCore.Design
 ```
 
-5. Veritabanını oluşturmak için Package Manager Console üzerinden şu komutu çalıştırın:
+5. To create the database, run the following command in the Package Manager Console:
 
 ```powershell
 Update-Database
 ```
 
-6. Projeyi çalıştırın.
+6. Run the project.
 
 ```text
 https
 ```
 
-veya Visual Studio içerisinden yeşil çalıştırma butonuna basın.
+or click the green run button in Visual Studio.
 
-## Örnek Kullanım Senaryosu
+## Sample Usage Scenario
 
-Örnek bir yatırım projesi için aşağıdaki bilgiler girilebilir:
-
-```text
-Proje Adı: E-Ticaret Depo Otomasyonu Yatırımı
-İlk Yatırım Maliyeti: 750000
-İskonto Oranı: 20
-Tahmin Dönemi: 5
-```
-
-Geçmiş nakit akışları:
+For a sample investment project, the following information can be entered:
 
 ```text
-Dönem 1: 160000
-Dönem 2: 210000
-Dönem 3: 260000
-Dönem 4: 320000
+Project Name: E-Commerce Warehouse Automation Investment
+Initial Investment Cost: 750000
+Discount Rate: 20
+Forecast Period: 5
 ```
 
-Sistem bu verilere göre gelecek dönem nakit akışlarını tahmin eder, NPV değerini hesaplar ve yatırım kararını kullanıcıya sunar.
+Historical cash flows:
 
-## Geliştirici
+```text
+Period 1: 160000
+Period 2: 210000
+Period 3: 260000
+Period 4: 320000
+```
+
+Based on this data, the system forecasts future cash flows, calculates the NPV value, and presents the investment decision to the user.
+
+## Developer
 
 İrem Nisa Sözen
-Yazılım Mühendisliği
-Manisa Celal Bayar Üniversitesi
+Software Engineering
+Manisa Celal Bayar University
