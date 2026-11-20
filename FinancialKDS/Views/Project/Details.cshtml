@@ -1,0 +1,145 @@
+﻿@model FinancialKDS.Models.Project
+
+@{
+    ViewData["Title"] = "Proje Detayı ve Nakit Akışları";
+    var cashFlows = ViewBag.CashFlows as List<FinancialKDS.Models.CashFlow> ?? new List<FinancialKDS.Models.CashFlow>();
+}
+
+<div class="container my-4">
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Başlık ve Aksiyon Butonları -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">@Model.Name - Proje Detayı</h2>
+            <p class="text-muted mb-0">Proje parametrelerini görüntüleyin ve nakit akışlarını yönetin.</p>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary me-2">Listeye Dön</a>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary me-2">
+                <i class="bi bi-pencil-square me-1"></i> Projeyi Düzenle
+            </a>
+            <a asp-action="Analyze" asp-route-id="@Model.Id" class="btn btn-success fw-semibold">
+                <i class="bi bi-graph-up-arrow me-1"></i> Finansal Analize Git
+            </a>
+        </div>
+    </div>
+
+    <!-- Proje Temel Metrikleri -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <small class="text-muted">İlk Yatırım Maliyeti</small>
+                <h4 class="fw-bold mt-1 text-dark">@Model.InitialInvestment.ToString("N2") TL</h4>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <small class="text-muted">İskonto Oranı</small>
+                <h4 class="fw-bold mt-1 text-dark">%@Model.DiscountRate</h4>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <small class="text-muted">Tahmin Dönemi Sayısı</small>
+                <h4 class="fw-bold mt-1 text-dark">@Model.ForecastPeriods Dönem</h4>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Description))
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="fw-bold text-secondary mb-1">Açıklama:</h6>
+                <p class="mb-0 text-dark">@Model.Description</p>
+            </div>
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- Sol Kolon: Girilmiş Nakit Akışları Tablosu -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0 text-dark">Mevcut Nakit Akışları</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (!cashFlows.Any())
+                    {
+                        <div class="p-4 text-center text-muted">
+                            Henüz bu projeye ait geçmiş nakit akış verisi girilmemiş.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Dönem</th>
+                                        <th>Nakit Akış Tutarı</th>
+                                        <th class="text-end pe-4">İşlem</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var cf in cashFlows)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold">@cf.Period. Dönem</td>
+                                            <td>@cf.Amount.ToString("N2") TL</td>
+                                            <td class="text-end pe-3">
+                                                <form asp-action="DeleteCashFlow" method="post" class="d-inline" onsubmit="return confirm('@cf.Period. Dönem nakit akışını silmek istediğinize emin misiniz?');">
+                                                    <input type="hidden" name="id" value="@cf.Id" />
+                                                    <input type="hidden" name="projectId" value="@Model.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        Sil
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ Kolon: Yeni Nakit Akışı Ekleme Formu -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0 text-dark">Yeni Nakit Akışı Ekle</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="AddCashFlow" method="post">
+                        <input type="hidden" name="projectId" value="@Model.Id" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Dönem Numarası</label>
+                            <input type="number" name="period" class="form-control" value="@(cashFlows.Count + 1)" placeholder="Örn: 1" required />
+                            <small class="text-muted">Sıralı dönem numarası giriniz.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nakit Akış Tutarı (TL)</label>
+                            <input type="number" step="any" name="amount" class="form-control" placeholder="Örn: 150000" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                            Nakit Akışını Kaydet
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,161 @@
+﻿@model List<FinancialKDS.Models.DTOs.AnalysisResultDto>
+
+@{
+    ViewData["Title"] = "Çoklu Proje Karşılaştırma Analizi";
+    var bestProjectByNPV = Model?.OrderByDescending(x => x.OriginalNPV).FirstOrDefault();
+    var bestProjectByIRR = Model?.OrderByDescending(x => x.IRR).FirstOrDefault();
+}
+
+<div class="container my-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Portföy ve Proje Karşılaştırma Matrisi</h2>
+            <p class="text-muted mb-0">Mevcut projelerinizi kârlılık, risk ve hassasiyet metriklerine göre kıyaslayın.</p>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary me-2">Projelere Dön</a>
+        </div>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info shadow-sm p-4 text-center">
+            <h5><i class="bi bi-info-circle me-2"></i>Karşılaştırılacak Yeterli Proje Bulunamadı</h5>
+            <p class="mb-0">Karşılaştırma yapabilmek için en az bir projenize nakit akış verisi eklemiş olmanız gerekmektedir.</p>
+        </div>
+    }
+    else
+    {
+        <!-- Öne Çıkan Karar Özet Kartları -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm p-3 bg-success bg-opacity-10 border-start border-success border-4">
+                    <small class="text-success fw-bold text-uppercase">En Yüksek Getiri (En İyi NPV)</small>
+                    <h4 class="fw-bold mt-1 mb-0 text-dark">@(bestProjectByNPV?.ProjectName ?? "-")</h4>
+                    <small class="text-muted">Net Bugünkü Değer: <strong class="text-success">@bestProjectByNPV?.OriginalNPV.ToString("N2") TL</strong></small>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm p-3 bg-primary bg-opacity-10 border-start border-primary border-4">
+                    <small class="text-primary fw-bold text-uppercase">En Hızlı Verimlilik (En Yüksek IRR)</small>
+                    <h4 class="fw-bold mt-1 mb-0 text-dark">@(bestProjectByIRR?.ProjectName ?? "-")</h4>
+                    <small class="text-muted">İç Verimlilik Oranı: <strong class="text-primary">%@bestProjectByIRR?.IRR.ToString("N2")</strong></small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Karşılaştırma Tablosu -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0 text-dark">Projeler Arası Metrik Karşılaştırması</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-start ps-4">Proje Adı</th>
+                                <th>İlk Yatırım</th>
+                                <th>Net Bugünkü Değer (NPV)</th>
+                                <th>İç Verimlilik (IRR)</th>
+                                <th>Geri Ödeme Süresi</th>
+                                <th>İskonto Emniyet Marjı</th>
+                                <th>Model Uyum ($R^2$)</th>
+                                <th>Karar Durumu</th>
+                                <th class="pe-4">İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in Model)
+                            {
+                                bool isBestNPV = bestProjectByNPV != null && p.ProjectId == bestProjectByNPV.ProjectId;
+
+                                <tr class="@(isBestNPV ? "table-success bg-opacity-25 fw-semibold" : "")">
+                                    <td class="text-start ps-4">
+                                        @p.ProjectName
+                                        @if (isBestNPV)
+                                        {
+                                            <span class="badge bg-success ms-1">En Kârlı</span>
+                                        }
+                                    </td>
+                                    <td>@p.InitialInvestment.ToString("N2") TL</td>
+                                    <td class="@(p.OriginalNPV >= 0 ? "text-success fw-bold" : "text-danger fw-bold")">
+                                        @p.OriginalNPV.ToString("N2") TL
+                                    </td>
+                                    <td class="text-primary fw-bold">%@p.IRR.ToString("N2")</td>
+                                    <td>
+                                        @(p.IsPaybackAchieved ? $"{p.DiscountedPaybackPeriod:N2} Dönem" : "Geri Ödenemedi")
+                                    </td>
+                                    <td class="@(p.DiscountRateSafetyMargin >= 0 ? "text-success" : "text-danger")">
+                                        %@p.DiscountRateSafetyMargin
+                                    </td>
+                                    <td>%@p.RSquared</td>
+                                    <td>
+                                        <span class="badge @(p.OriginalNPV >= 0 ? "bg-success" : "bg-danger")">
+                                            @p.StatusDecision
+                                        </span>
+                                    </td>
+                                    <td class="pe-4">
+                                        <a asp-action="Analyze" asp-route-id="@p.ProjectId" class="btn btn-sm btn-outline-primary">
+                                            Detaylı Analiz
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portföy Karşılaştırma Grafiği -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0 text-dark">Projelerin Net Bugünkü Değer (NPV) Gösterimi</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="comparisonChart" style="max-height: 350px;"></canvas>
+            </div>
+        </div>
+    }
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const projectNames = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Select(x => x.ProjectName)));
+        const npvValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Select(x => x.OriginalNPV)));
+
+        const backgroundColors = npvValues.map(val => val >= 0 ? 'rgba(25, 135, 84, 0.7)' : 'rgba(220, 53, 69, 0.7)');
+        const borderColors = npvValues.map(val => val >= 0 ? '#198754' : '#dc3545');
+
+        const ctx = document.getElementById('comparisonChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: projectNames,
+                datasets: [{
+                    label: 'Net Bugünkü Değer (NPV - TL)',
+                    data: npvValues,
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 1.5,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Projelerin Net Kârlılık Karşılaştırması (TL)' }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    </script>
+}

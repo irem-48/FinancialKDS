@@ -1,0 +1,277 @@
+﻿@model FinancialKDS.Models.DTOs.AnalysisResultDto
+
+@{
+    ViewData["Title"] = "Proje Akıllı Analizi ve Simülasyon";
+}
+
+<div class="container my-4">
+    <!-- Başlık ve Navigasyon -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">@Model.ProjectName - Akıllı Analiz</h2>
+            <p class="text-muted mb-0">Fizibilite Analizi, İstatistiksel Metrikler ve Hassasiyet Analizi</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a asp-action="Details" asp-route-id="@Model.ProjectId" class="btn btn-outline-secondary">Veri Girişine Dön</a>
+            <a asp-action="ExportPdf" asp-route-id="@Model.ProjectId" class="btn btn-outline-danger">
+                <i class="bi bi-file-earmark-pdf me-1"></i> PDF Rapor
+            </a>
+            <a asp-action="ExportExcel" asp-route-id="@Model.ProjectId" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-excel me-1"></i> Excel Rapor
+            </a>
+            <span class="badge @(Model.OriginalNPV >= 0 ? "bg-success" : "bg-danger") fs-6 p-2">
+                @Model.StatusDecision
+            </span>
+        </div>
+    </div>
+
+    <!-- Birincil Metrik Özet Kartları -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <small class="text-muted">İlk Yatırım Maliyeti</small>
+                <h4 class="fw-bold mt-1 text-dark">@Model.InitialInvestment.ToString("N2") TL</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <small class="text-muted">Net Bugünkü Değer (NPV)</small>
+                <h4 class="fw-bold mt-1 @(Model.OriginalNPV >= 0 ? "text-success" : "text-danger")">
+                    @Model.OriginalNPV.ToString("N2") TL
+                </h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <small class="text-muted">İç Verimlilik Oranı (IRR)</small>
+                <h4 class="fw-bold mt-1 text-primary">%@Model.IRR.ToString("N2")</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <small class="text-muted">İskonto Edilmiş Geri Ödeme</small>
+                <h4 class="fw-bold mt-1 text-info">
+                    @(Model.IsPaybackAchieved ? $"{Model.DiscountedPaybackPeriod:N2} Dönem" : "Geri Ödenemedi")
+                </h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- İkincil Metrikler ve İstatistiksel Model Doğruluğu -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center bg-white">
+                <small class="text-muted">Mevcut İskonto Oranı</small>
+                <h5 class="fw-bold mt-1 text-dark">%@Model.DiscountRate</h5>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center bg-white">
+                <small class="text-muted">İskonto Emniyet Marjı</small>
+                <h5 class="fw-bold mt-1 @(Model.DiscountRateSafetyMargin >= 0 ? "text-success" : "text-danger")">
+                    %@Model.DiscountRateSafetyMargin
+                </h5>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center bg-white">
+                <small class="text-muted">Regresyon Uyum Başarısı (R²)</small>
+                <h5 class="fw-bold mt-1 text-dark">%@Model.RSquared</h5>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center bg-white">
+                <small class="text-muted">Tahmin Hata Payı (RMSE)</small>
+                <h5 class="fw-bold mt-1 text-dark">@Model.RMSE.ToString("N2") TL</h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- AKILLI İYİLEŞTİRME TAVSİYELERİ PANELSİ -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-lightbulb text-warning me-2"></i>Sistem Tarafından Önerilen Akıllı İyileştirmeler
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Recommendations != null && Model.Recommendations.Any())
+            {
+                <div class="row g-3">
+                    @foreach (var rec in Model.Recommendations)
+                    {
+                        var badgeClass = rec.Risk switch
+                        {
+                            FinancialKDS.Models.DTOs.RiskLevel.High => "bg-danger",
+                            FinancialKDS.Models.DTOs.RiskLevel.Medium => "bg-warning text-dark",
+                            _ => "bg-success"
+                        };
+
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100 bg-light">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold mb-0">@rec.Title</h6>
+                                    <span class="badge @badgeClass">@rec.Category</span>
+                                </div>
+                                <p class="small text-muted mb-2">@rec.Description</p>
+                                <div class="p-2 bg-white rounded border border-info">
+                                    <small class="fw-semibold text-info">Aksiyon Önerisi:</small>
+                                    <small class="d-block text-dark">@rec.ActionableAdvice</small>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- WHAT-IF SENARYO SİMÜLASYONU VE GRAFİK -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="fw-bold mb-0">"Ya Şöyle Olursa?" Simülasyonu</h5>
+                </div>
+                <div class="card-body">
+                    <form id="simulationForm">
+                        <input type="hidden" id="projectId" value="@Model.ProjectId" />
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Nakit Akışı Büyüme Simülasyonu (%)</label>
+                            <input type="number" class="form-control" id="cashFlowGrowthPercent" value="10" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">İskonto Oranı Değişimi (Puan)</label>
+                            <input type="number" step="0.5" class="form-control" id="discountRateAdjustment" value="-2" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">İlk Yatırım İndirimi (%)</label>
+                            <input type="number" class="form-control" id="initialInvestmentAdjustmentPercent" value="0" />
+                        </div>
+
+                        <button type="button" class="btn btn-primary w-100 fw-semibold" onclick="runSimulation()">
+                            Senaryoyu Hesapla ve Simüle Et
+                        </button>
+                    </form>
+
+                    <div id="simulationResultCard" class="mt-4 p-3 bg-light rounded border d-none">
+                        <h6 class="fw-bold mb-2">Simülasyon Sonucu</h6>
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Mevcut NPV:</small>
+                            <small class="fw-bold">@Model.OriginalNPV.ToString("N2") TL</small>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Simüle NPV:</small>
+                            <small id="simulatedNpvText" class="fw-bold text-success">0 TL</small>
+                        </div>
+                        <hr class="my-2" />
+                        <div class="d-flex justify-content-between">
+                            <small class="fw-bold">Fark (Kazanç):</small>
+                            <small id="improvementAmountText" class="fw-bold text-primary">0 TL</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0 text-dark">Nakit Akışı ve Senaryo Karşılaştırması</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="cashFlowChart" style="max-height: 380px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const rawCashFlows = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ProjectedCashFlows ?? new List<FinancialKDS.Models.DTOs.CashFlowDetailDto>()));
+    const periods = (rawCashFlows || []).map(x => "Dönem " + (x.Period || x.period));
+    const originalCashFlows = (rawCashFlows || []).map(x => parseFloat(x.EstimatedAmount || x.estimatedAmount) || 0);
+
+    const ctx = document.getElementById('cashFlowChart').getContext('2d');
+    let cashFlowChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: periods,
+            datasets: [{
+                label: 'Mevcut Tahmini Nakit Akışı',
+                data: originalCashFlows,
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                title: { display: true, text: 'Tahmini Dönemsel Nakit Akışları (TL)' }
+            },
+            scales: { y: { beginAtZero: false } }
+        }
+    });
+
+    function runSimulation() {
+        const parseInputValue = (id) => {
+            const val = document.getElementById(id).value;
+            if (!val) return 0;
+            return parseFloat(val.toString().replace(',', '.')) || 0;
+        };
+
+        const payload = {
+            projectId: parseInt(document.getElementById('projectId').value),
+            cashFlowGrowthPercent: parseInputValue('cashFlowGrowthPercent'),
+            discountRateAdjustment: parseInputValue('discountRateAdjustment'),
+            initialInvestmentAdjustmentPercent: parseInputValue('initialInvestmentAdjustmentPercent')
+        };
+
+        fetch('/Project/Simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('simulationResultCard').classList.remove('d-none');
+                document.getElementById('simulatedNpvText').innerText = data.simulatedNpv.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) + ' TL';
+
+                const improvementText = data.improvementAmount >= 0
+                    ? '+' + data.improvementAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) + ' TL'
+                    : data.improvementAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) + ' TL';
+
+                document.getElementById('improvementAmountText').innerText = improvementText;
+
+                const simulatedCashFlows = data.simulatedCashFlows || data.SimulatedCashFlows || [];
+                const simulatedValues = simulatedCashFlows.map(x => parseFloat(x.estimatedAmount || x.EstimatedAmount) || 0);
+
+                if (cashFlowChart.data.datasets.length > 1) {
+                    cashFlowChart.data.datasets[1].data = simulatedValues;
+                } else {
+                    cashFlowChart.data.datasets.push({
+                        label: 'Simüle Edilmiş İyileştirilmiş Akış',
+                        data: simulatedValues,
+                        borderColor: '#198754',
+                        backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.3
+                    });
+                }
+                cashFlowChart.update();
+            }
+        });
+    }
+</script>

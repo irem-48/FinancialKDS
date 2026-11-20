@@ -1,0 +1,92 @@
+﻿@model FinancialKDS.Models.DTOs.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Üye Ol";
+}
+
+<div class="d-flex align-items-center justify-content-center py-4" style="min-height: calc(100vh - 160px);">
+    <div class="container">
+        <div class="row justify-content-center align-items-stretch g-0 shadow-lg rounded-4 overflow-hidden border">
+            <!-- Sol Kolon: Tanıtım ve Görsel Alanı -->
+            <div class="col-lg-6 bg-dark text-white p-5 d-none d-lg-flex flex-column justify-content-between" style="background: linear-gradient(135deg, #212529 0%, #343a40 100%);">
+                <div>
+                    <div class="d-flex align-items-center mb-4">
+                        <i class="bi bi-rocket-takeoff fs-2 text-primary me-2"></i>
+                        <h3 class="fw-bold mb-0">FinancialKDS</h3>
+                    </div>
+                    <h2 class="fw-bold display-6 mb-3">Aramıza Katılın</h2>
+                    <p class="lead opacity-75 fs-6">
+                        Hemen ücretsiz hesabınızı oluşturun, yatırım projelerinizi sisteme tanımlayın ve detaylı fizibilite analizlerinizi dakikalar içinde başlatın.
+                    </p>
+                </div>
+                <div class="pt-4 border-top border-secondary d-flex justify-content-between align-items-center text-muted small">
+                    <span><i class="bi bi-check-circle-fill text-success me-1"></i> Kolay Kullanım</span>
+                    <span><i class="bi bi-check-circle-fill text-success me-1"></i> Güvenli Veri Saklama</span>
+                </div>
+            </div>
+
+            <!-- Sağ Kolon: Genişletilmiş Kayıt Formu -->
+            <div class="col-lg-6 bg-white p-4 p-md-5 d-flex flex-column justify-content-center">
+                <div class="mb-4">
+                    <h3 class="fw-bold text-dark mb-1">Yeni Hesap Oluşturun</h3>
+                    <p class="text-muted small">Aşağıdaki bilgileri doldurarak hemen kaydolabilirsiniz.</p>
+                </div>
+
+                <form asp-action="Register" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label asp-for="FirstName" class="form-label fw-semibold text-secondary"></label>
+                            <input asp-for="FirstName" class="form-control bg-light" placeholder="Adınız" />
+                            <span asp-validation-for="FirstName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="LastName" class="form-label fw-semibold text-secondary"></label>
+                            <input asp-for="LastName" class="form-control bg-light" placeholder="Soyadınız" />
+                            <span asp-validation-for="LastName" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label fw-semibold text-secondary"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-envelope"></i></span>
+                            <input asp-for="Email" class="form-control bg-light border-start-0 ps-0" placeholder="ornek@email.com" />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label fw-semibold text-secondary"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-lock"></i></span>
+                            <input asp-for="Password" class="form-control bg-light border-start-0 ps-0" placeholder="******" />
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="ConfirmPassword" class="form-label fw-semibold text-secondary"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-shield-lock"></i></span>
+                            <input asp-for="ConfirmPassword" class="form-control bg-light border-start-0 ps-0" placeholder="******" />
+                        </div>
+                        <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm rounded-3">
+                        <i class="bi bi-person-plus me-2"></i>Kayıt Ol ve Başla
+                    </button>
+                </form>
+
+                <hr class="my-4 text-muted" />
+
+                <div class="text-center">
+                    <span class="text-muted small">Zaten bir hesabınız var mı?</span>
+                    <a asp-action="Login" class="ms-2 fw-bold text-primary text-decoration-none">Giriş Yap</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

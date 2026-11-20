@@ -14,65 +14,31 @@ namespace FinancialKDS.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Create(int projectId)
-        {
-            var project = await _context.Projects.FindAsync(projectId);
-
-            if (project == null)
-            {
-                return NotFound();
-            }
-
-            ViewBag.Project = project;
-            return View(new CashFlow { ProjectId = projectId });
-        }
-
+        // POST: CashFlows/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CashFlow cashFlow)
+        public async Task<IActionResult> Create([Bind("ProjectId,Period,Amount")] CashFlow cashFlow)
         {
-            var project = await _context.Projects.FindAsync(cashFlow.ProjectId);
-
-            if (project == null)
-            {
-                return NotFound();
-            }
-
-            ViewBag.Project = project;
-
-            bool periodExists = await _context.CashFlows
-                .AnyAsync(c => c.ProjectId == cashFlow.ProjectId && c.Period == cashFlow.Period);
-
-            if (periodExists)
-            {
-                ModelState.AddModelError(nameof(CashFlow.Period), "Bu proje için aynı dönem zaten girilmiş. Lütfen farklı bir dönem gir.");
-            }
-
             if (ModelState.IsValid)
             {
-                _context.CashFlows.Add(cashFlow);
+                _context.Add(cashFlow);
                 await _context.SaveChangesAsync();
-
                 return RedirectToAction("Details", "Projects", new { id = cashFlow.ProjectId });
             }
-
-            return View(cashFlow);
+            return RedirectToAction("Details", "Projects", new { id = cashFlow.ProjectId });
         }
 
-        public async Task<IActionResult> Delete(int id)
+        // POST: CashFlows/Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id, int projectId)
         {
-            var cashFlow = await _context.CashFlows.FindAsync(id);
-
-            if (cashFlow == null)
+            var cashFlow = await _context.FindAsync<CashFlow>(id);
+            if (cashFlow != null)
             {
-                return NotFound();
+                _context.Remove(cashFlow);
+                await _context.SaveChangesAsync();
             }
-
-            int projectId = cashFlow.ProjectId;
-
-            _context.CashFlows.Remove(cashFlow);
-            await _context.SaveChangesAsync();
-
             return RedirectToAction("Details", "Projects", new { id = projectId });
         }
     }

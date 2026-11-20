@@ -1,0 +1,123 @@
+﻿@model IEnumerable<FinancialKDS.Models.Project>
+
+@{
+    ViewData["Title"] = "Finansal Karar Destek Sistemi - Projeler";
+}
+
+<div class="container-fluid px-4 py-3">
+    <!-- Karşılama Paneli -->
+    <div class="p-4 mb-4 bg-light rounded-3 shadow-sm border">
+        <div class="container-fluid py-2">
+            <h1 class="display-6 fw-bold text-dark">Finansal Karar Destek Sistemi</h1>
+            <p class="col-md-10 fs-6 text-muted">
+                Bu sistem, yatırım projelerinin fizibilite analizini gerçekleştirmek için geçmiş nakit akışlarını doğrusal regresyon yöntemiyle analiz eder, gelecek dönem tahminleri üretir ve Net Bugünkü Değer (NPV) ile diğer finansal göstergelerle yatırım kararını destekler.
+            </p>
+            <div class="d-flex gap-2">
+                <a asp-action="Create" class="btn btn-primary btn-lg px-4">
+                    <i class="bi bi-plus-circle me-1"></i> Yeni Proje Oluştur
+                </a>
+                <a asp-action="Compare" class="btn btn-outline-primary btn-lg px-4">
+                    <i class="bi bi-bar-chart-line me-1"></i> Projeleri Karşılaştır
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Özet İstatistik Kartları -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100 border-start border-4 border-primary">
+                <div class="card-body">
+                    <span class="text-uppercase fs-7 text-muted fw-bold">Toplam Proje</span>
+                    <h3 class="fw-bold text-primary mt-2 mb-0">@Model.Count()</h3>
+                    <small class="text-muted">Sisteme kayıtlı yatırım projesi</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100 border-start border-4 border-success">
+                <div class="card-body">
+                    <span class="text-uppercase fs-7 text-muted fw-bold">Toplam Yatırım Hacmi</span>
+                    <h3 class="fw-bold text-success mt-2 mb-0">@Model.Sum(p => p.InitialInvestment).ToString("N2") TL</h3>
+                    <small class="text-muted">Projelerin toplam başlangıç maliyeti</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100 border-start border-4 border-warning">
+                <div class="card-body">
+                    <span class="text-uppercase fs-7 text-muted fw-bold">Ortalama İskonto Oranı</span>
+                    <h3 class="fw-bold text-warning mt-2 mb-0">
+                        %@(Model.Any() ? Math.Round(Model.Average(p => (double)p.DiscountRate), 2) : 0)
+                    </h3>
+                    <small class="text-muted">Projelerde kullanılan ortalama oran</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100 border-start border-4 border-info">
+                <div class="card-body">
+                    <span class="text-uppercase fs-7 text-muted fw-bold">Ortalama Tahmin Dönemi</span>
+                    <h3 class="fw-bold text-info mt-2 mb-0">
+                        @(Model.Any() ? Math.Round(Model.Average(p => (double)p.ForecastPeriods), 1) : 0) Dönem
+                    </h3>
+                    <small class="text-muted">Toplam analiz edilen dönem süresi</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Proje Listesi Tablosu (Sadeleştirilmiş Başlık) -->
+    <div class="card border-0 shadow-sm rounded-3 mb-5">
+        <div class="card-header bg-white py-3 px-4">
+            <h4 class="fw-bold mb-0 text-dark">Yatırım Projeleri</h4>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="py-3 px-4" style="width: 35%;">Proje Adı & Açıklama</th>
+                        <th class="py-3">İlk Yatırım</th>
+                        <th class="py-3">İskonto Oranı</th>
+                        <th class="py-3">Tahmin Dönemi</th>
+                        <th class="py-3">Oluşturulma Tarihi</th>
+                        <th class="py-3 px-4 text-center">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted fs-6">
+                                Henüz sisteme kayıtlı bir yatırım projesi bulunmuyor.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="py-3 px-4">
+                                    <div class="fw-bold text-dark fs-6">@item.Name</div>
+                                    <small class="text-muted d-block text-truncate mt-1" style="max-width: 420px;">
+                                        @item.Description
+                                    </small>
+                                </td>
+                                <td class="py-3 fw-bold text-nowrap fs-6">@item.InitialInvestment.ToString("N2") TL</td>
+                                <td class="py-3 fs-6">%@item.DiscountRate</td>
+                                <td class="py-3 fs-6">@item.ForecastPeriods dönem</td>
+                                <td class="py-3 text-muted">@item.CreatedDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td class="py-3 px-4 text-center text-nowrap">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-primary btn-sm px-3 py-1 me-1 font-semibold">Detay / Analiz</a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm px-3 py-1 me-1 font-semibold text-white">Düzenle</a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger btn-sm px-3 py-1 font-semibold">Sil</a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

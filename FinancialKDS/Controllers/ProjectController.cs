@@ -1,251 +1,338 @@
 ﻿using FinancialKDS.Data;
 using FinancialKDS.Models;
+using FinancialKDS.Models.DTOs;
 using FinancialKDS.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace FinancialKDS.Controllers
 {
-    public class ProjectsController : Controller
+    [Authorize]
+    public class ProjectController : Controller
     {
+        private readonly FinancialAnalysisService _analysisService;
         private readonly ApplicationDbContext _context;
-        private readonly RegressionService _regressionService;
-        private readonly NpvService _npvService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public ProjectsController(
-            ApplicationDbContext context,
-            RegressionService regressionService,
-            NpvService npvService)
+        public ProjectController(FinancialAnalysisService analysisService, ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
+            _analysisService = analysisService;
             _context = context;
-            _regressionService = regressionService;
-            _npvService = npvService;
+            _userManager = userManager;
         }
 
+        private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+
+        // GET: /Project/Index
         public async Task<IActionResult> Index()
         {
+            var userId = GetUserId();
             var projects = await _context.Projects
-                .Include(p => p.AnalysisResult)
-                .OrderByDescending(p => p.CreatedAt)
+                .Where(p => p.UserId == userId)
                 .ToListAsync();
 
             return View(projects);
         }
 
+        // GET: /Project/Details/1
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var userId = GetUserId();
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+            if (project == null) return NotFound();
+
+            var cashFlows = await _context.CashFlows
+                .Where(cf => cf.ProjectId == id)
+                .OrderBy(cf => cf.Period)
+                .ToListAsync();
+
+            ViewBag.CashFlows = cashFlows;
+            return View("Details", project);
+        }
+
+        // POST: /Project/AddCashFlow
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddCashFlow(int projectId, int period, decimal amount)
+        {
+            var userId = GetUserId();
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId && p.UserId == userId);
+            if (project == null) return NotFound();
+
+            var cashFlow = new CashFlow
+            {
+                ProjectId = projectId,
+                Period = period,
+                Amount = amount
+            };
+
+            _context.CashFlows.Add(cashFlow);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        // POST: /Project/DeleteCashFlow
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteCashFlow(int id, int projectId)
+        {
+            var userId = GetUserId();
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId && p.UserId == userId);
+            if (project == null) return NotFound();
+
+            var cashFlow = await _context.CashFlows.FindAsync(id);
+            if (cashFlow != null && cashFlow.ProjectId == projectId)
+            {
+                _context.CashFlows.Remove(cashFlow);
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Details), new { id = projectId });
+        }
+
+        // GET: /Project/Analyze/1
+        public async Task<IActionResult> Analyze(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var userId = GetUserId();
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+            if (project == null) return NotFound();
+
+            var historicalCashFlows = await _context.CashFlows
+                .Where(cf => cf.ProjectId == id)
+                .OrderBy(cf => cf.Period)
+                .Select(cf => cf.Amount)
+                .ToListAsync();
+
+            if (!historicalCashFlows.Any())
+            {
+                TempData["ErrorMessage"] = "Analiz yapılabilmesi için lütfen önce en az bir nakit akışı ekleyin.";
+                return RedirectToAction(nameof(Details), new { id = project.Id });
+            }
+
+            AnalysisResultDto analysisResult = _analysisService.AnalyzeProject(
+                projectId: project.Id,
+                projectName: project.Name,
+                initialInvestment: project.InitialInvestment,
+                discountRatePercent: project.DiscountRate,
+                historicalCashFlows: historicalCashFlows,
+                forecastPeriods: project.ForecastPeriods
+            );
+
+            return View("Analyze", analysisResult);
+        }
+
+        // GET: /Project/ExportPdf/1
+        public async Task<IActionResult> ExportPdf(int id)
+        {
+            var userId = GetUserId();
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+            if (project == null) return NotFound();
+
+            var historicalCashFlows = await _context.CashFlows
+                .Where(cf => cf.ProjectId == id)
+                .OrderBy(cf => cf.Period)
+                .Select(cf => cf.Amount)
+                .ToListAsync();
+
+            var analysis = _analysisService.AnalyzeProject(
+                project.Id, project.Name, project.InitialInvestment,
+                project.DiscountRate, historicalCashFlows, project.ForecastPeriods
+            );
+
+            byte[] pdfBytes = _analysisService.GeneratePdfReport(analysis);
+            return File(pdfBytes, "application/pdf", $"{project.Name}_Finansal_Rapor.pdf");
+        }
+
+        // GET: /Project/ExportExcel/1
+        public async Task<IActionResult> ExportExcel(int id)
+        {
+            var userId = GetUserId();
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+            if (project == null) return NotFound();
+
+            var historicalCashFlows = await _context.CashFlows
+                .Where(cf => cf.ProjectId == id)
+                .OrderBy(cf => cf.Period)
+                .Select(cf => cf.Amount)
+                .ToListAsync();
+
+            var analysis = _analysisService.AnalyzeProject(
+                project.Id, project.Name, project.InitialInvestment,
+                project.DiscountRate, historicalCashFlows, project.ForecastPeriods
+            );
+
+            byte[] excelBytes = _analysisService.GenerateExcelReport(analysis);
+
+            // Uzantı ve Content-Type CSV olarak ayarlandı (Excel çift tıklandığında otomatik açar)
+            return File(excelBytes, "text/csv; charset=utf-8", $"{project.Name}_Finansal_Rapor.csv");
+        }
+
+        // GET: /Project/Create
         public IActionResult Create()
         {
             return View();
         }
 
+        // POST: /Project/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Project project)
         {
+            var userId = GetUserId();
+            project.UserId = userId;
+            project.CreatedDate = DateTime.Now;
+
+            ModelState.Remove("UserId");
+            ModelState.Remove("User");
+            ModelState.Remove("CashFlows");
+
             if (ModelState.IsValid)
             {
-                _context.Projects.Add(project);
+                _context.Add(project);
                 await _context.SaveChangesAsync();
-
                 return RedirectToAction(nameof(Index));
             }
 
             return View(project);
         }
 
-        public async Task<IActionResult> Details(int id)
+        // GET: /Project/Edit/1
+        public async Task<IActionResult> Edit(int? id)
         {
-            var project = await _context.Projects
-                .Include(p => p.CashFlows)
-                .Include(p => p.ForecastResults)
-                .Include(p => p.AnalysisResult)
-                .FirstOrDefaultAsync(p => p.Id == id);
+            if (id == null) return NotFound();
 
-            if (project == null)
-            {
-                return NotFound();
-            }
+            var userId = GetUserId();
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+            if (project == null) return NotFound();
 
-            return View(project);
+            return View("Edit", project);
         }
 
-        public async Task<IActionResult> Analyze(int id)
-        {
-            var project = await _context.Projects
-                .Include(p => p.CashFlows)
-                .Include(p => p.ForecastResults)
-                .Include(p => p.AnalysisResult)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
-            if (project == null)
-            {
-                return NotFound();
-            }
-
-            if (project.CashFlows.Count < 2)
-            {
-                TempData["ErrorMessage"] = "Regresyon analizi için en az 2 nakit akışı verisi girilmelidir.";
-                return RedirectToAction(nameof(Details), new { id = project.Id });
-            }
-
-            try
-            {
-                if (project.ForecastResults.Any())
-                {
-                    _context.ForecastResults.RemoveRange(project.ForecastResults);
-                }
-
-                if (project.AnalysisResult != null)
-                {
-                    _context.AnalysisResults.Remove(project.AnalysisResult);
-                }
-
-                var orderedCashFlows = project.CashFlows
-                    .OrderBy(c => c.Period)
-                    .ToList();
-
-                var regressionResult = _regressionService.CalculateForecasts(
-                    orderedCashFlows,
-                    project.ForecastPeriod);
-
-                var forecasts = regressionResult.Forecasts;
-
-                decimal npv = _npvService.CalculateNpv(
-                    project.InitialInvestment,
-                    project.DiscountRate,
-                    forecasts);
-
-                string decision = _npvService.GetDecision(npv);
-
-                foreach (var forecast in forecasts)
-                {
-                    forecast.ProjectId = project.Id;
-                    _context.ForecastResults.Add(forecast);
-                }
-
-                var analysisResult = new AnalysisResult
-                {
-                    ProjectId = project.Id,
-                    Beta0 = regressionResult.Beta0,
-                    Beta1 = regressionResult.Beta1,
-                    NPV = npv,
-                    Decision = decision,
-                    CreatedAt = DateTime.Now
-                };
-
-                _context.AnalysisResults.Add(analysisResult);
-
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Analiz başarıyla tamamlandı.";
-            }
-            catch (Exception ex)
-            {
-                TempData["ErrorMessage"] = ex.Message;
-            }
-
-            return RedirectToAction(nameof(Details), new { id = project.Id });
-        }
-    
-    // Proje düzenleme sayfası
-public async Task<IActionResult> Edit(int id)
-        {
-            var project = await _context.Projects.FindAsync(id);
-
-            if (project == null)
-            {
-                return NotFound();
-            }
-
-            return View(project);
-        }
-
-        // Proje düzenleme kaydetme
+        // POST: /Project/Edit/1
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Project project)
         {
-            if (id != project.Id)
+            if (id != project.Id) return NotFound();
+
+            var userId = GetUserId();
+            var existingProject = await _context.Projects.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+
+            if (existingProject == null) return NotFound();
+
+            existingProject.Name = project.Name;
+            existingProject.Description = project.Description;
+            existingProject.InitialInvestment = project.InitialInvestment;
+            existingProject.DiscountRate = project.DiscountRate;
+            existingProject.ForecastPeriods = project.ForecastPeriods;
+
+            try
             {
-                return NotFound();
+                _context.Projects.Update(existingProject);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
             }
-
-            if (ModelState.IsValid)
+            catch (DbUpdateConcurrencyException)
             {
-                var existingProject = await _context.Projects.FindAsync(id);
-
-                if (existingProject == null)
+                if (!_context.Projects.Any(e => e.Id == id && e.UserId == userId))
                 {
                     return NotFound();
                 }
-
-                existingProject.ProjectName = project.ProjectName;
-                existingProject.Description = project.Description;
-                existingProject.InitialInvestment = project.InitialInvestment;
-                existingProject.DiscountRate = project.DiscountRate;
-                existingProject.ForecastPeriod = project.ForecastPeriod;
-
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Proje bilgileri başarıyla güncellendi.";
-                return RedirectToAction(nameof(Details), new { id = project.Id });
+                else
+                {
+                    throw;
+                }
             }
-
-            return View(project);
         }
 
-        // Proje silme onay sayfası
-        public async Task<IActionResult> Delete(int id)
+        // GET: /Project/Compare
+        public async Task<IActionResult> Compare()
         {
-            var project = await _context.Projects
-                .Include(p => p.CashFlows)
-                .Include(p => p.ForecastResults)
-                .Include(p => p.AnalysisResult)
-                .FirstOrDefaultAsync(p => p.Id == id);
+            var userId = GetUserId();
+            var projects = await _context.Projects
+                .Where(p => p.UserId == userId)
+                .ToListAsync();
 
-            if (project == null)
+            var comparisonList = new List<AnalysisResultDto>();
+
+            foreach (var project in projects)
             {
-                return NotFound();
+                var historicalCashFlows = await _context.CashFlows
+                    .Where(cf => cf.ProjectId == project.Id)
+                    .OrderBy(cf => cf.Period)
+                    .Select(cf => cf.Amount)
+                    .ToListAsync();
+
+                // Eğer geçmiş nakit akışı varsa analizi çalıştırıp listeye ekliyoruz
+                if (historicalCashFlows.Any())
+                {
+                    var analysis = _analysisService.AnalyzeProject(
+                        projectId: project.Id,
+                        projectName: project.Name,
+                        initialInvestment: project.InitialInvestment,
+                        discountRatePercent: project.DiscountRate,
+                        historicalCashFlows: historicalCashFlows,
+                        forecastPeriods: project.ForecastPeriods
+                    );
+                    comparisonList.Add(analysis);
+                }
             }
 
-            return View(project);
+            return View("Compare", comparisonList);
         }
 
-        // Proje silme işlemi
+        // POST: /Project/Simulate
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> Simulate([FromBody] ScenarioParametersDto scenario)
         {
-            var project = await _context.Projects
-                .Include(p => p.CashFlows)
-                .Include(p => p.ForecastResults)
-                .Include(p => p.AnalysisResult)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
-            if (project == null)
+            if (!ModelState.IsValid || scenario == null)
             {
-                return NotFound();
+                return BadRequest(new { success = false, message = "Geçersiz simülasyon parametreleri." });
             }
 
-            if (project.CashFlows.Any())
+            var userId = GetUserId();
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == scenario.ProjectId && p.UserId == userId);
+            if (project == null) return NotFound(new { success = false, message = "Proje bulunamadı veya erişim yetkiniz yok." });
+
+            var historicalCashFlows = await _context.CashFlows
+                .Where(cf => cf.ProjectId == scenario.ProjectId)
+                .OrderBy(cf => cf.Period)
+                .Select(cf => cf.Amount)
+                .ToListAsync();
+
+            var currentAnalysis = _analysisService.AnalyzeProject(
+                project.Id,
+                project.Name,
+                project.InitialInvestment,
+                project.DiscountRate,
+                historicalCashFlows,
+                project.ForecastPeriods
+            );
+
+            var simulatedResult = _analysisService.SimulateScenario(currentAnalysis, scenario);
+            decimal improvementAmount = simulatedResult.OriginalNPV - currentAnalysis.OriginalNPV;
+
+            return Json(new
             {
-                _context.CashFlows.RemoveRange(project.CashFlows);
-            }
-
-            if (project.ForecastResults.Any())
-            {
-                _context.ForecastResults.RemoveRange(project.ForecastResults);
-            }
-
-            if (project.AnalysisResult != null)
-            {
-                _context.AnalysisResults.Remove(project.AnalysisResult);
-            }
-
-            _context.Projects.Remove(project);
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "Proje ve ilişkili analiz verileri başarıyla silindi.";
-            return RedirectToAction(nameof(Index));
+                success = true,
+                originalNpv = currentAnalysis.OriginalNPV,
+                simulatedNpv = simulatedResult.OriginalNPV,
+                improvementAmount = improvementAmount,
+                simulatedCashFlows = simulatedResult.ProjectedCashFlows,
+                statusDecision = simulatedResult.OriginalNPV >= 0 ? "Kabul Edilebilir (Simüle Edildi)" : "Reddedilmeli"
+            });
         }
     }
 }

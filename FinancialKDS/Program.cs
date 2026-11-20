@@ -1,22 +1,45 @@
 using FinancialKDS.Data;
-using Microsoft.EntityFrameworkCore;
+using FinancialKDS.Models;
 using FinancialKDS.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// MVC servisleri
-builder.Services.AddControllersWithViews();
-
-builder.Services.AddScoped<RegressionService>();
-builder.Services.AddScoped<NpvService>();
-
-// Veritabaný baðlantýsý
+// DbContext Tanýmlamasý
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Identity Servislerinin Tanýmlanmasý
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    // Þifre Kurallarý
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 6;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
+
+// Cookie Ayarlarý ve Oturum Yönlendirmeleri
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/Login";
+
+    // Uygulama kapandýðýnda oturumun tarayýcý çerezinde kalmayýp her açýlýþta tekrar giriþ istenmesini saðlar
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+    options.SlidingExpiration = true;
+});
+
+builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<FinancialAnalysisService>();
+
 var app = builder.Build();
 
-// Hata yönetimi
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -28,11 +51,13 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// Kimlik Doðrulama ve Yetkilendirme Middleware
+app.UseAuthentication();
 app.UseAuthorization();
 
-// MVC route ayarý
+// Varsayýlan Rota (Default Route): Proje ilk açýldýðýnda Account/Login sayfasýna yönlendirir
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Projects}/{action=Index}/{id?}");
+    pattern: "{controller=Account}/{action=Login}/{id?}");
 
 app.Run();

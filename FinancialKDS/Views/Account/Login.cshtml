@@ -1,0 +1,77 @@
+﻿@model FinancialKDS.Models.DTOs.LoginViewModel
+
+@{
+    ViewData["Title"] = "Üye Girişi";
+}
+
+<div class="d-flex align-items-center justify-content-center py-4" style="min-height: calc(100vh - 160px);">
+    <div class="container">
+        <div class="row justify-content-center align-items-stretch g-0 shadow-lg rounded-4 overflow-hidden border">
+            <!-- Sol Kolon: Tanıtım ve Görsel Alanı -->
+            <div class="col-lg-6 bg-primary text-white p-5 d-none d-lg-flex flex-column justify-content-between" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
+                <div>
+                    <div class="d-flex align-items-center mb-4">
+                        <i class="bi bi-graph-up-arrow fs-2 me-2"></i>
+                        <h3 class="fw-bold mb-0">FinancialKDS</h3>
+                    </div>
+                    <h2 class="fw-bold display-6 mb-3">Finansal Karar Destek Sistemi</h2>
+                    <p class="lead opacity-75 fs-6">
+                        Yatırım projelerinizi analiz edin, regresyon modelleriyle gelecekteki nakit akışlarını öngörün ve "Ya Şöyle Olursa?" simülasyonlarıyla en doğru kararları alın.
+                    </p>
+                </div>
+                <div class="pt-4 border-top border-white border-opacity-25 d-flex justify-content-between align-items-center text-white-50 small">
+                    <span><i class="bi bi-shield-check me-1"></i> Güvenli Çok Kullanıcılı Mimari</span>
+                    <span>v2.0 Karar Destek</span>
+                </div>
+            </div>
+
+            <!-- Sağ Kolon: Genişletilmiş Giriş Formu -->
+            <div class="col-lg-6 bg-white p-4 p-md-5 d-flex flex-column justify-content-center">
+                <div class="mb-4">
+                    <h3 class="fw-bold text-dark mb-1">Hesabınıza Giriş Yapın</h3>
+                    <p class="text-muted small">Projelerinize ve finansal analizlerinize erişmek için bilgilerinizi giriniz.</p>
+                </div>
+
+                <form asp-action="Login" method="post" asp-route-returnUrl="@ViewData["ReturnUrl"]">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label fw-semibold text-secondary"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-envelope"></i></span>
+                            <input asp-for="Email" class="form-control bg-light border-start-0 ps-0" placeholder="ornek@email.com" />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label fw-semibold text-secondary"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-lock"></i></span>
+                            <input asp-for="Password" class="form-control bg-light border-start-0 ps-0" placeholder="******" />
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label small text-secondary"></label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm rounded-3">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Giriş Yap
+                    </button>
+                </form>
+
+                <hr class="my-4 text-muted" />
+
+                <div class="text-center">
+                    <span class="text-muted small">Henüz bir hesabınız yok mu?</span>
+                    <a asp-action="Register" class="ms-2 fw-bold text-primary text-decoration-none">Hemen Üye Olun</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
